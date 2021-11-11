@@ -21,7 +21,7 @@ namespace
 		std::vector<sf::Vertex> outerLoopVertices = std::vector<sf::Vertex>(5);
 		std::vector<sf::Vertex> innerLinesVertices = std::vector<sf::Vertex>(8);
 		sf::Rect<float> rect;
-		sf::RectangleShape rectangle;
+		sf::RectangleShape crossLines[2];
 		sf::CircleShape circle;
 
 		void init(const sf::Vector2u& windowSize);
@@ -125,23 +125,6 @@ void MainApp::render()
 	_window.draw(boardRenderData.outerLoopVertices.data(), boardRenderData.outerLoopVertices.size(), sf::LineStrip);
 	_window.draw(boardRenderData.innerLinesVertices.data(), boardRenderData.innerLinesVertices.size(), sf::Lines);
 
-	const auto& drawXMark = [this](const auto& pos)
-	{
-		auto shape = boardRenderData.rectangle;
-		shape.setPosition(pos);
-		shape.rotate(45);
-		_window.draw(shape);
-		shape.rotate(90);
-		_window.draw(shape);
-	};
-
-	const auto& drawOMark = [this](const auto& pos)
-	{
-		auto shape = boardRenderData.circle;
-		shape.setPosition(pos);
-		_window.draw(shape);
-	};
-
 	{
 		std::scoped_lock lock(boardState.mutex);
 
@@ -157,7 +140,22 @@ void MainApp::render()
 			const auto offset = boardRenderData.rect.width / 6.f;
 			const auto pos = sf::Vector2f(boardRenderData.rect.left + (1 + 2 * (i / 3)) * offset, boardRenderData.rect.top + (1 + 2 * (i % 3)) * offset);
 
-			val == 1 ? drawXMark(pos) : drawOMark(pos);
+			if (val == 1)
+			{
+				auto shape = boardRenderData.crossLines[0];
+				shape.setPosition(pos);
+				_window.draw(shape);
+				shape = boardRenderData.crossLines[1];
+				shape.setPosition(pos);
+				_window.draw(shape);
+			}
+
+			if (val == 2)
+			{
+				auto shape = boardRenderData.circle;
+				shape.setPosition(pos);
+				_window.draw(shape);
+			}
 		}
 	}
 
@@ -214,9 +212,12 @@ namespace
 		const auto xMarkColor = sf::Color::Blue;
 		const auto oMarkColor = sf::Color::Red;
 
-		rectangle.setSize({ markSize, markWidth });
-		rectangle.setFillColor(xMarkColor);
-		rectangle.setOrigin(rectangle.getSize() * 0.5f);
+		crossLines[0].setSize({ markSize, markWidth });
+		crossLines[0].setFillColor(xMarkColor);
+		crossLines[0].setOrigin(crossLines[0].getSize() * 0.5f);
+		crossLines[0].rotate(45);
+		crossLines[1] = crossLines[0];
+		crossLines[1].rotate(90);
 
 		circle.setRadius(radius);
 		circle.setFillColor(sf::Color::Transparent);
