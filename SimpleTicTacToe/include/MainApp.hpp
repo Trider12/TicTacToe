@@ -9,14 +9,15 @@
 class MainApp
 {
 public:
-	MainApp();
+	MainApp(const sf::Vector2u& windowSize = { 1280u, 720u }, const std::string& windowTitle = "STTT");
 	~MainApp();
 
 	bool isRunning() const { return _isRunning; };
 	void update();
 
 private:
-	void draw();
+	void render();
+	void initUi();
 	void updateAi();
 
 	bool _isRunning = false;
@@ -25,5 +26,4 @@ private:
 	sf::Clock _renderDeltaClock;
 	std::thread _renderThread;
 	std::thread _aiThread;
-	mutable std::mutex _dataMutex;
 };
