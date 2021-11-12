@@ -1,8 +1,9 @@
 #include "MainApp.hpp"
 
-#include "imgui.h"
-#include "imgui-SFML.h"
+#include <mutex>
 
+#include <imgui.h>
+#include <imgui-SFML.h>
 #include <SFML/Window/Event.hpp>
 #include <SFML/Graphics/Rect.hpp>
 #include <SFML/Graphics/RectangleShape.hpp>
@@ -10,6 +11,8 @@
 
 namespace
 {
+	const int playerMark = 1, aiMark = 2;
+
 	struct BoardState
 	{
 		mutable std::mutex mutex;
@@ -28,7 +31,7 @@ namespace
 	} boardRenderData;
 }
 
-MainApp::MainApp(const sf::Vector2u& windowSize, const std::string& windowTitle) : _isRunning{ true }
+MainApp::MainApp(const sf::Vector2u& windowSize, const std::string& windowTitle) : _isAppRunning{ true }
 {
 	_window.create(sf::VideoMode(windowSize.x, windowSize.y), windowTitle, sf::Style::Titlebar | sf::Style::Close);
 	_window.setVerticalSyncEnabled(true);
@@ -38,8 +41,8 @@ MainApp::MainApp(const sf::Vector2u& windowSize, const std::string& windowTitle)
 
 	boardRenderData.init(_window.getSize());
 
-	_aiThread = std::thread([this]() { for (; _isRunning; updateAi()); });
-	_renderThread = std::thread([this]() { for (_window.setActive(true); _isRunning || !_window.setActive(false); render()); });
+	_aiThread = std::thread([this]() { for (; _isAppRunning; updateAi()); });
+	_renderThread = std::thread([this]() { for (_window.setActive(true); _isAppRunning || !_window.setActive(false); render()); });
 }
 
 MainApp::~MainApp()
@@ -58,58 +61,79 @@ void MainApp::update()
 	{
 		ImGui::SFML::ProcessEvent(event);
 
-		switch (event.type)
+		if (event.type == sf::Event::Closed)
 		{
-		default:
-			break;
-		case sf::Event::Closed:
-		{
-			_isRunning = false;
-			break;
+			_isAppRunning = false;
 		}
-		case sf::Event::KeyPressed:
-			break;
-		case sf::Event::KeyReleased:
-			break;
-		case sf::Event::MouseButtonPressed:
+#ifndef _DEBUG
+		if (!_isGameOver && _isPlayerTurn)
+#endif // !_DEBUG
 		{
-			bool left = event.mouseButton.button == sf::Mouse::Left;
-			bool right = false;
-#ifdef _DEBUG
-			right = event.mouseButton.button == sf::Mouse::Right;
-#endif // _DEBUG
-
-			if ((left || right) && boardRenderData.rect.contains((float)event.mouseButton.x, (float)event.mouseButton.y))
+			switch (event.type)
 			{
-				const sf::Vector2i pos(event.mouseButton.x - (int)boardRenderData.rect.left, event.mouseButton.y - (int)boardRenderData.rect.top);
-				const int i = pos.x / std::lroundf(boardRenderData.rect.width / 3);
-				const int j = pos.y / std::lroundf(boardRenderData.rect.height / 3);
-				const int index = i * 3 + j;
-
-				assert(index >= 0);
-
+			default:
+				break;
+			case sf::Event::KeyPressed:
+#ifdef _DEBUG
+				if (event.key.code == sf::Keyboard::Space)
+				{
+					_isPlayerTurn = !_isPlayerTurn;
+				}
+				if (event.key.code == sf::Keyboard::R)
 				{
 					std::scoped_lock lock(boardState.mutex);
 
-					if (boardState.cells[index] == 0)
-					{
-						boardState.cells[index] = 1;
-#ifdef _DEBUG
-						if (right)
-						{
-							boardState.cells[index] = 2;
-						}
-#endif // _DEBUG
-					}
-				}
-			}
+					boardState.cells.assign(boardState.cells.size(), 0);
 
-			break;
-		}
-		case sf::Event::MouseButtonReleased:
-			break;
-		case sf::Event::MouseMoved:
-			break;
+					_isGameOver = false;
+				}
+#endif // _DEBUG
+				break;
+			case sf::Event::KeyReleased:
+				break;
+			case sf::Event::MouseButtonPressed:
+			{
+				bool left = event.mouseButton.button == sf::Mouse::Left;
+				bool right = false;
+#ifdef _DEBUG
+				right = event.mouseButton.button == sf::Mouse::Right;
+#endif // _DEBUG
+
+				if ((left || right) && boardRenderData.rect.contains((float)event.mouseButton.x, (float)event.mouseButton.y))
+				{
+					const sf::Vector2i pos(event.mouseButton.x - (int)boardRenderData.rect.left, event.mouseButton.y - (int)boardRenderData.rect.top);
+					const int i = pos.y / std::lroundf(boardRenderData.rect.height / 3);
+					const int j = pos.x / std::lroundf(boardRenderData.rect.width / 3);
+					const int index = i * 3 + j;
+
+					assert(index >= 0);
+
+					{
+						std::scoped_lock lock(boardState.mutex);
+
+						if (boardState.cells[index] == 0)
+						{
+							boardState.cells[index] = playerMark;
+#ifdef _DEBUG
+							if (right)
+							{
+								boardState.cells[index] = aiMark;
+							}
+#endif // _DEBUG
+						}
+					}
+#ifndef _DEBUG
+					_isPlayerTurn = false;
+#endif // !_DEBUG
+				}
+
+				break;
+			}
+			case sf::Event::MouseButtonReleased:
+				break;
+			case sf::Event::MouseMoved:
+				break;
+			}
 		}
 	}
 }
@@ -138,7 +162,7 @@ void MainApp::render()
 			}
 
 			const auto offset = boardRenderData.rect.width / 6.f;
-			const auto pos = sf::Vector2f(boardRenderData.rect.left + (1 + 2 * (i / 3)) * offset, boardRenderData.rect.top + (1 + 2 * (i % 3)) * offset);
+			const auto pos = sf::Vector2f(boardRenderData.rect.left + (1 + 2 * (i % 3)) * offset, boardRenderData.rect.top + (1 + 2 * (i / 3)) * offset);
 
 			if (val == 1)
 			{
@@ -172,6 +196,37 @@ void MainApp::initUi()
 
 void MainApp::updateAi()
 {
+	if (!_isGameOver && !_isPlayerTurn)
+	{
+		std::vector<uint8_t> cells;
+
+		{
+			std::scoped_lock lock(boardState.mutex);
+
+			if (_aiPlayer.isGameOver(boardState.cells))
+			{
+				_isGameOver = true;
+				return;
+			}
+
+			cells = boardState.cells;
+		}
+
+		int movePos = _aiPlayer.getMove(cells);
+
+		{
+			std::scoped_lock lock(boardState.mutex);
+			boardState.cells[movePos] = aiMark;
+
+			if (_aiPlayer.isGameOver(boardState.cells))
+			{
+				_isGameOver = true;
+				return;
+			}
+		}
+
+		_isPlayerTurn = true;
+	}
 }
 
 namespace

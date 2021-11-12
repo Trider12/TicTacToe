@@ -2,7 +2,7 @@
 
 int main()
 {
-	for (MainApp app; app.isRunning(); app.update());
+	for (MainApp app; app.isAppRunning(); app.update());
 
 	return 0;
 }
