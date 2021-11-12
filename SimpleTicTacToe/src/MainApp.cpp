@@ -2,6 +2,11 @@
 
 #include <mutex>
 
+#if defined(_WIN32) && !defined(_DEBUG)
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
+
 #include <imconfig-SFML.h>
 #include <imgui.h>
 #include <imgui-SFML.h>
@@ -35,6 +40,9 @@ namespace
 
 MainApp::MainApp(const sf::Vector2u& windowSize, const std::string& windowTitle) : _isAppRunning{ true }
 {
+#if defined(_WIN32) && !defined(_DEBUG)
+	::ShowWindow(::GetConsoleWindow(), SW_HIDE);
+#endif
 	_window.create(sf::VideoMode(windowSize.x, windowSize.y), windowTitle, sf::Style::Titlebar | sf::Style::Close);
 	_window.setVerticalSyncEnabled(true);
 	_window.setActive(false);
@@ -206,6 +214,7 @@ void MainApp::initUi()
 		ImGuiWindowFlags_NoResize |
 		ImGuiWindowFlags_NoCollapse |
 		ImGuiWindowFlags_NoNav);
+	ImGui::PopStyleVar();
 
 	if (ImGui::Button("Play", buttonSize))
 	{
