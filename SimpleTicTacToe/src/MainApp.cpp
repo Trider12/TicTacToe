@@ -2,6 +2,7 @@
 
 #include <mutex>
 
+#include <imconfig-SFML.h>
 #include <imgui.h>
 #include <imgui-SFML.h>
 #include <SFML/Window/Event.hpp>
@@ -12,6 +13,7 @@
 namespace
 {
 	const int playerMark = 1, aiMark = 2;
+	static bool isPlayerFirst = true;
 
 	struct BoardState
 	{
@@ -38,6 +40,7 @@ MainApp::MainApp(const sf::Vector2u& windowSize, const std::string& windowTitle)
 	_window.setActive(false);
 
 	ImGui::SFML::Init(_window);
+	ImGui::GetIO().IniFilename = nullptr;
 
 	boardRenderData.init(_window.getSize());
 
@@ -142,7 +145,10 @@ void MainApp::render()
 {
 	ImGui::SFML::Update(_window, _renderDeltaClock.restart());
 
-	initUi();
+	if (_isGameOver)
+	{
+		initUi();
+	}
 
 	_window.clear(sf::Color::White);
 
@@ -189,8 +195,38 @@ void MainApp::render()
 
 void MainApp::initUi()
 {
-	ImGui::Begin("Hello, world!");
-	ImGui::Button("Look at this pretty button");
+	auto winSize = sf::Vector2f(_window.getSize());
+	auto buttonSize = sf::Vector2f(winSize.x * 0.1f, winSize.y * 0.1f);
+
+	ImGui::SetNextWindowPos(winSize * 0.5f, ImGuiCond_Always, { 0.5f, 0.5f });
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 40.f, 40.f });
+	ImGui::Begin("Hello, world!", nullptr, ImGuiWindowFlags_NoTitleBar |
+		ImGuiWindowFlags_NoScrollbar |
+		ImGuiWindowFlags_NoMove |
+		ImGuiWindowFlags_NoResize |
+		ImGuiWindowFlags_NoCollapse |
+		ImGuiWindowFlags_NoNav);
+
+	if (ImGui::Button("Play", buttonSize))
+	{
+		std::scoped_lock lock(boardState.mutex);
+
+		boardState.cells.assign(boardState.cells.size(), 0);
+
+		_isGameOver = false;
+		_isPlayerTurn = isPlayerFirst;
+	}
+
+	ImGui::Spacing();
+	ImGui::Checkbox("Player First", &isPlayerFirst);
+	ImGui::Spacing();
+
+	if (ImGui::Button("Exit", buttonSize))
+	{
+		_isAppRunning = false;
+	}
+
+	//ImGui::ShowDemoWindow();
 	ImGui::End();
 }
 

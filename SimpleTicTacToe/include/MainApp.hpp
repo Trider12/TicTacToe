@@ -23,7 +23,7 @@ private:
 	void updateAi();
 
 	std::atomic_bool _isAppRunning = false;
-	std::atomic_bool _isGameOver = false;
+	std::atomic_bool _isGameOver = true;
 	std::atomic_bool _isPlayerTurn = true;
 	std::thread _renderThread;
 	std::thread _aiThread;
