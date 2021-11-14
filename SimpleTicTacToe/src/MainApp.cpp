@@ -1,4 +1,5 @@
 #include "MainApp.hpp"
+#include "AiPlayer.hpp"
 
 #include <mutex>
 
@@ -38,7 +39,7 @@ namespace
 	} boardRenderData;
 }
 
-MainApp::MainApp(const sf::Vector2u& windowSize, const std::string& windowTitle) : _isAppRunning{ true }
+MainApp::MainApp(const sf::Vector2u& windowSize /*= { 1280u, 720u }*/, const std::string& windowTitle /*= "STTT"*/) : IMainApp(windowSize, windowTitle)
 {
 #if defined(_WIN32) && !defined(_DEBUG)
 	::ShowWindow(::GetConsoleWindow(), SW_HIDE);
@@ -51,6 +52,8 @@ MainApp::MainApp(const sf::Vector2u& windowSize, const std::string& windowTitle)
 	ImGui::GetIO().IniFilename = nullptr;
 
 	boardRenderData.init(_window.getSize());
+
+	_aiPlayer = std::make_unique<AiPlayer>();
 
 	_aiThread = std::thread([this]() { for (; _isAppRunning; updateAi()); });
 	_renderThread = std::thread([this]() { for (_window.setActive(true); _isAppRunning || !_window.setActive(false); render()); });
@@ -248,7 +251,7 @@ void MainApp::updateAi()
 		{
 			std::scoped_lock lock(boardState.mutex);
 
-			if (_aiPlayer.isGameOver(boardState.cells))
+			if (_aiPlayer->isGameOver(boardState.cells))
 			{
 				_isGameOver = true;
 				return;
@@ -257,13 +260,13 @@ void MainApp::updateAi()
 			cells = boardState.cells;
 		}
 
-		int movePos = _aiPlayer.getMove(cells);
+		int movePos = _aiPlayer->getMove(cells);
 
 		{
 			std::scoped_lock lock(boardState.mutex);
 			boardState.cells[movePos] = aiMark;
 
-			if (_aiPlayer.isGameOver(boardState.cells))
+			if (_aiPlayer->isGameOver(boardState.cells))
 			{
 				_isGameOver = true;
 				return;

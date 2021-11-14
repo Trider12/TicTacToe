@@ -13,8 +13,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{43623c09-8da2-41ef-ac7a-5875b725b265}</ProjectGuid>
-    <RootNamespace>SimpleTicTacToe</RootNamespace>
+    <ProjectGuid>{19F417A7-FD08-4A24-B874-D03B80AEEF82}</ProjectGuid>
+    <RootNamespace>UltimateTicTacToe</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(SolutionDir)tools\vcpkg\scripts\buildsystems\msbuild\vcpkg.targets" />
@@ -106,13 +106,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="src\AiPlayer.cpp" />
-    <ClCompile Include="src\MainApp.cpp" />
     <ClCompile Include="src\main.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="include\AiPlayer.hpp" />
-    <ClInclude Include="include\MainApp.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

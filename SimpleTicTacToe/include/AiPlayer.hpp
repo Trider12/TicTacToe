@@ -1,10 +1,10 @@
 #pragma once
 
-#include <vector>
+#include "Interfaces/IAiPlayer.hpp"
 
-class AiPlayer
+class AiPlayer : public IAiPlayer
 {
 public:
-	int getMove(std::vector<uint8_t> boardCells);
-	bool isGameOver(const std::vector<uint8_t>& boardCells);
+	int getMove(std::vector<uint8_t> boardCells) override;
+	bool isGameOver(const std::vector<uint8_t>& boardCells) override;
 };
