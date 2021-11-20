@@ -183,17 +183,17 @@ void MainApp::render()
 
 			if (val == 1)
 			{
-				auto shape = boardRenderData.crossLines[0];
-				shape.setPosition(pos);
-				_window.draw(shape);
-				shape = boardRenderData.crossLines[1];
-				shape.setPosition(pos);
-				_window.draw(shape);
+				auto& shape1 = boardRenderData.crossLines[0];
+				shape1.setPosition(pos);
+				_window.draw(shape1);
+				auto& shape2 = boardRenderData.crossLines[1];
+				shape2.setPosition(pos);
+				_window.draw(shape2);
 			}
 
 			if (val == 2)
 			{
-				auto shape = boardRenderData.circle;
+				auto& shape = boardRenderData.circle;
 				shape.setPosition(pos);
 				_window.draw(shape);
 			}
