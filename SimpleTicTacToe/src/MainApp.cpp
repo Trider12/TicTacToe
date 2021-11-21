@@ -211,7 +211,7 @@ void MainApp::initUi()
 
 	ImGui::SetNextWindowPos(winSize * 0.5f, ImGuiCond_Always, { 0.5f, 0.5f });
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 40.f, 40.f });
-	ImGui::Begin("Hello, world!", nullptr, ImGuiWindowFlags_NoTitleBar |
+	ImGui::Begin("Main Menu", nullptr, ImGuiWindowFlags_NoTitleBar |
 		ImGuiWindowFlags_NoScrollbar |
 		ImGuiWindowFlags_NoMove |
 		ImGuiWindowFlags_NoResize |
