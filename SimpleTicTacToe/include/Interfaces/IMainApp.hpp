@@ -6,7 +6,7 @@
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/System/Clock.hpp>
 
-#include "IAiPlayer.hpp"
+#include "Interfaces/IGame.hpp"
 
 class IMainApp
 {
@@ -19,20 +19,16 @@ public:
 
 protected:
 	virtual void render() = 0;
-	virtual void initUi() = 0;
+	virtual void drawUi() = 0;
 	virtual void updateAi() = 0;
 
 	std::atomic_bool _isAppRunning = false;
-	std::atomic_bool _isGameOver = true;
-	std::atomic_bool _isPlayerTurn = true;
+	std::unique_ptr<IGame> _gameInstance;
 	std::thread _renderThread;
 	std::thread _aiThread;
 
 	sf::RenderWindow _window;
 	sf::Clock _renderDeltaClock;
-
-	std::unique_ptr<IAiPlayer> _aiPlayer;
-
 private:
 	IMainApp();
 };

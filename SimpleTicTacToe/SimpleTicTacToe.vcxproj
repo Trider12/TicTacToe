@@ -106,13 +106,20 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="src\AiPlayer.cpp" />
+    <ClCompile Include="src\SimpleTtt.cpp" />
+    <ClCompile Include="src\AiPlayerSimpleTtt.cpp" />
     <ClCompile Include="src\MainApp.cpp" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\UltimateTtt.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\AiPlayer.hpp" />
+    <ClInclude Include="include\SimpleTtt.hpp" />
+    <ClInclude Include="include\AiPlayerSimpleTtt.hpp" />
+    <ClInclude Include="include\Interfaces\IAiPlayer.hpp" />
+    <ClInclude Include="include\Interfaces\IGame.hpp" />
+    <ClInclude Include="include\Interfaces\IMainApp.hpp" />
     <ClInclude Include="include\MainApp.hpp" />
+    <ClInclude Include="include\UltimateTtt.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

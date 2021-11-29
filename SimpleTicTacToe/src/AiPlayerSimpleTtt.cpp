@@ -1,4 +1,4 @@
-#include "AiPlayer.hpp"
+#include "AiPlayerSimpleTtt.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -83,7 +83,7 @@ namespace
 	}
 }
 
-int AiPlayer::getMove(std::vector<uint8_t> boardCells)
+int AiPlayerSimpleTtt::getMove(std::vector<uint8_t> boardCells)
 {
 	int move = -1;
 	int bestScore = std::numeric_limits<int>::min();
@@ -111,7 +111,7 @@ int AiPlayer::getMove(std::vector<uint8_t> boardCells)
 	return move;
 }
 
-bool AiPlayer::isGameOver(const std::vector<uint8_t>& boardCells)
+bool AiPlayerSimpleTtt::isGameOver(const std::vector<uint8_t>& boardCells)
 {
 	return getBoardScore(boardCells, 0) != 0 || std::none_of(boardCells.begin(), boardCells.end(), [](const auto& val) { return val == 0; });
 }

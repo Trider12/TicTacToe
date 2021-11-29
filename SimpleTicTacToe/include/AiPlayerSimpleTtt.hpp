@@ -2,7 +2,7 @@
 
 #include "Interfaces/IAiPlayer.hpp"
 
-class AiPlayer : public IAiPlayer
+class AiPlayerSimpleTtt : public IAiPlayer
 {
 public:
 	int getMove(std::vector<uint8_t> boardCells) override;
