@@ -15,6 +15,7 @@ public:
 
 	virtual void start(bool isPlayerFirst) = 0;
 	virtual void handleInput(const sf::Event& event) = 0;
+	virtual void update(float delta) = 0;
 	virtual void render(sf::RenderTarget& target) = 0;
 	virtual void updateAi() = 0;
 	virtual bool isOver() const { return _isGameOver; }

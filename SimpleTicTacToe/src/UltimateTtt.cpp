@@ -44,6 +44,11 @@ void UltimateTtt::handleInput(const sf::Event& event)
 	//TODO
 }
 
+void UltimateTtt::update(float delta)
+{
+	//TODO
+}
+
 void UltimateTtt::render(sf::RenderTarget& target)
 {
 	target.draw(boardRenderData.linesVertices.data(), boardRenderData.linesVertices.size(), sf::Lines);

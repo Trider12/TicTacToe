@@ -9,6 +9,7 @@
 #include <SFML/Graphics/CircleShape.hpp>
 
 #include "AiPlayerSimpleTtt.hpp"
+#include "MainApp.hpp"
 
 namespace
 {
@@ -17,8 +18,27 @@ namespace
 	struct BoardState
 	{
 		mutable std::mutex mutex;
+
+		std::vector<uint8_t>& getCellsUnsafe()
+		{
+			return cells;
+		}
+
+		std::vector<uint8_t> getCellsCopySafe() const
+		{
+			std::scoped_lock lock(mutex);
+			return cells;
+		}
+
+		void clear()
+		{
+			std::scoped_lock lock(mutex);
+			cells.assign(cells.size(), 0);
+		}
+
+	private:
 		std::vector<uint8_t> cells = std::vector<uint8_t>(9);
-	} boardState = {};
+	} boardState;
 
 	struct BoardRenderData
 	{
@@ -41,49 +61,40 @@ SimpleTtt::SimpleTtt(const sf::Vector2u& windowSize) : IGame(windowSize)
 
 void SimpleTtt::start(bool isPlayerFirst)
 {
-	std::scoped_lock lock(boardState.mutex);
-
-	boardState.cells.assign(boardState.cells.size(), 0);
-
+	boardState.clear();
 	_isGameOver = false;
 	_isPlayerTurn = isPlayerFirst;
 }
 
 void SimpleTtt::handleInput(const sf::Event& event)
 {
-#ifndef _DEBUG
-	if (!_isGameOver && _isPlayerTurn)
-#endif // !_DEBUG
+	if (!_isGameOver && (_isPlayerTurn || MainApp::debugPlayEnabled))
 	{
 		switch (event.type)
 		{
 		default:
 			break;
 		case sf::Event::KeyPressed:
-#ifdef _DEBUG
-			if (event.key.code == sf::Keyboard::Space)
+			if (MainApp::debugPlayEnabled)
 			{
-				_isPlayerTurn = !_isPlayerTurn;
+				if (event.key.code == sf::Keyboard::Space)
+				{
+					_isPlayerTurn = !_isPlayerTurn;
+				}
+				if (event.key.code == sf::Keyboard::R)
+				{
+					boardState.clear();
+					_isGameOver = false;
+				}
 			}
-			if (event.key.code == sf::Keyboard::R)
-			{
-				std::scoped_lock lock(boardState.mutex);
 
-				boardState.cells.assign(boardState.cells.size(), 0);
-
-				_isGameOver = false;
-			}
-#endif // _DEBUG
 			break;
 		case sf::Event::KeyReleased:
 			break;
 		case sf::Event::MouseButtonPressed:
 		{
 			bool left = event.mouseButton.button == sf::Mouse::Left;
-			bool right = false;
-#ifdef _DEBUG
-			right = event.mouseButton.button == sf::Mouse::Right;
-#endif // _DEBUG
+			bool right = MainApp::debugPlayEnabled && event.mouseButton.button == sf::Mouse::Right;
 
 			if ((left || right) && boardRenderData.rect.contains((float)event.mouseButton.x, (float)event.mouseButton.y))
 			{
@@ -97,20 +108,18 @@ void SimpleTtt::handleInput(const sf::Event& event)
 				{
 					std::scoped_lock lock(boardState.mutex);
 
-					if (boardState.cells[index] == 0)
+					auto& cells = boardState.getCellsUnsafe();
+
+					if (cells[index] == 0)
 					{
-						boardState.cells[index] = playerMark;
-#ifdef _DEBUG
-						if (right)
-						{
-							boardState.cells[index] = aiMark;
-						}
-#endif // _DEBUG
+						cells[index] = left ? playerMark : right ? aiMark : 0;
 					}
 				}
-#ifndef _DEBUG
-				_isPlayerTurn = false;
-#endif // !_DEBUG
+
+				if (!MainApp::debugPlayEnabled)
+				{
+					_isPlayerTurn = false;
+				}
 			}
 
 			break;
@@ -123,42 +132,44 @@ void SimpleTtt::handleInput(const sf::Event& event)
 	}
 }
 
+void SimpleTtt::update(float delta)
+{
+}
+
 void SimpleTtt::render(sf::RenderTarget& target)
 {
 	target.draw(boardRenderData.outerLoopVertices.data(), boardRenderData.outerLoopVertices.size(), sf::LineStrip);
 	target.draw(boardRenderData.innerLinesVertices.data(), boardRenderData.innerLinesVertices.size(), sf::Lines);
 
+	auto cellsCopy = boardState.getCellsCopySafe();
+
+	for (uint8_t i = 0; i < cellsCopy.size(); i++)
 	{
-		std::scoped_lock lock(boardState.mutex);
+		const auto& val = cellsCopy[i];
 
-		for (uint8_t i = 0; i < boardState.cells.size(); i++)
+		if (val != 1 && val != 2)
 		{
-			const auto& val = boardState.cells[i];
+			continue;
+		}
 
-			if (val != 1 && val != 2)
-			{
-				continue;
-			}
+		const auto offset = boardRenderData.rect.width / 6.f;
+		const auto pos = sf::Vector2f(boardRenderData.rect.left + (1 + 2 * (i % 3)) * offset, boardRenderData.rect.top + (1 + 2 * (i / 3)) * offset);
 
-			const auto offset = boardRenderData.rect.width / 6.f;
-			const auto pos = sf::Vector2f(boardRenderData.rect.left + (1 + 2 * (i % 3)) * offset, boardRenderData.rect.top + (1 + 2 * (i / 3)) * offset);
+		if (val == 1)
+		{
+			auto& shape1 = boardRenderData.crossLines[0];
+			shape1.setPosition(pos);
+			target.draw(shape1);
+			auto& shape2 = boardRenderData.crossLines[1];
+			shape2.setPosition(pos);
+			target.draw(shape2);
+		}
 
-			if (val == 1)
-			{
-				auto& shape1 = boardRenderData.crossLines[0];
-				shape1.setPosition(pos);
-				target.draw(shape1);
-				auto& shape2 = boardRenderData.crossLines[1];
-				shape2.setPosition(pos);
-				target.draw(shape2);
-			}
-
-			if (val == 2)
-			{
-				auto& shape = boardRenderData.circle;
-				shape.setPosition(pos);
-				target.draw(shape);
-			}
+		if (val == 2)
+		{
+			auto& shape = boardRenderData.circle;
+			shape.setPosition(pos);
+			target.draw(shape);
 		}
 	}
 }
@@ -167,31 +178,22 @@ void SimpleTtt::updateAi()
 {
 	if (!_isGameOver && !_isPlayerTurn)
 	{
-		std::vector<uint8_t> cells;
-
 		{
-			std::scoped_lock lock(boardState.mutex);
+			auto cellsCopy = boardState.getCellsCopySafe();
 
-			if (_aiPlayer->isGameOver(boardState.cells))
+			if (_isGameOver = _aiPlayer->isGameOver(cellsCopy))
 			{
-				_isGameOver = true;
 				return;
 			}
 
-			cells = boardState.cells;
+			int movePos = _aiPlayer->getMove(cellsCopy);
+			std::scoped_lock lock(boardState.mutex);
+			boardState.getCellsUnsafe()[movePos] = aiMark;
 		}
 
-		int movePos = _aiPlayer->getMove(cells);
-
+		if (_isGameOver = _aiPlayer->isGameOver(boardState.getCellsCopySafe()))
 		{
-			std::scoped_lock lock(boardState.mutex);
-			boardState.cells[movePos] = aiMark;
-
-			if (_aiPlayer->isGameOver(boardState.cells))
-			{
-				_isGameOver = true;
-				return;
-			}
+			return;
 		}
 
 		_isPlayerTurn = true;

@@ -32,6 +32,8 @@ namespace
 	static void HelpMarker(const char* desc, bool* textCopyOnClick = nullptr);
 }
 
+std::atomic_bool MainApp::debugPlayEnabled = false;
+
 MainApp::MainApp(const sf::Vector2u& windowSize /*= { 1280u, 720u }*/, const std::string& windowTitle /*= "STTT"*/) : IMainApp(windowSize, windowTitle)
 {
 #if defined(_WIN32) && !defined(_DEBUG)
@@ -66,12 +68,18 @@ void MainApp::update()
 	{
 		ImGui::SFML::ProcessEvent(event);
 
+		_gameInstance->handleInput(event);
+
 		if (event.type == sf::Event::Closed)
 		{
 			_isAppRunning = false;
+			return;
 		}
+	}
 
-		_gameInstance->handleInput(event);
+	if (_isAppRunning)
+	{
+		_gameInstance->update(_updateDeltaClock.restart().asSeconds());
 	}
 }
 
@@ -87,8 +95,8 @@ void MainApp::render()
 	_window.clear(clearColorDefault);
 
 	_gameInstance->render(_window);
-
 	ImGui::SFML::Render(_window);
+
 	_window.display();
 }
 
@@ -99,7 +107,8 @@ void MainApp::drawUi()
 
 	ImGui::SetNextWindowPos(winSize * 0.5f, ImGuiCond_Always, { 0.5f, 0.5f });
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 40.f, 40.f });
-	ImGui::Begin("Main Menu", nullptr, ImGuiWindowFlags_NoTitleBar |
+	ImGui::Begin("Main Menu", nullptr,
+		ImGuiWindowFlags_NoTitleBar |
 		ImGuiWindowFlags_NoScrollbar |
 		ImGuiWindowFlags_NoMove |
 		ImGuiWindowFlags_NoResize |
@@ -130,6 +139,12 @@ void MainApp::drawUi()
 	ImGui::SameLine();
 	HelpMarker("Work in Progress", &isMenuPopupCopiedToClipboard);
 	ImGui::Spacing();
+#ifdef _DEBUG
+#define GET_VARIABLE_NAME(variable) #variable
+	bool temp = debugPlayEnabled;
+	debugPlayEnabled = ImGui::Checkbox(GET_VARIABLE_NAME(debugPlayEnabled), &temp);
+	ImGui::Spacing();
+#endif // _DEBUG
 
 	if (ImGui::Button("Exit", buttonSize))
 	{

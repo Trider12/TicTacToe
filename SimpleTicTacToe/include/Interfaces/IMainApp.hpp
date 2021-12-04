@@ -28,6 +28,7 @@ protected:
 	std::thread _aiThread;
 
 	sf::RenderWindow _window;
+	sf::Clock _updateDeltaClock;
 	sf::Clock _renderDeltaClock;
 private:
 	IMainApp();

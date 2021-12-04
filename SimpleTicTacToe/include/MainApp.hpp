@@ -9,6 +9,8 @@ public:
 	~MainApp();
 
 	void update() override;
+
+	static std::atomic_bool debugPlayEnabled; // for debug purposes only
 protected:
 	void render() override;
 	void drawUi() override;
