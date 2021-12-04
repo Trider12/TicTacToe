@@ -21,23 +21,15 @@ namespace
 		SimpleMode = 0, UltimateMode = 1
 	};
 
+	static GameMode gameMode = GameMode::SimpleMode;
 	const sf::Color clearColorDefault = sf::Color(100, 100, 100, 255);
 
-	static bool isPlayerFirst = true;
-	static GameMode gameMode = GameMode::SimpleMode;
+	// UI helpers
 
-	static void HelpMarker(const char* desc)
-	{
-		ImGui::TextDisabled("(?)");
-		if (ImGui::IsItemHovered())
-		{
-			ImGui::BeginTooltip();
-			ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
-			ImGui::TextUnformatted(desc);
-			ImGui::PopTextWrapPos();
-			ImGui::EndTooltip();
-		}
-	}
+	static bool isPlayerFirst = true;
+	static bool isMenuPopupCopiedToClipboard = false;
+
+	static void HelpMarker(const char* desc, bool* textCopyOnClick = nullptr);
 }
 
 MainApp::MainApp(const sf::Vector2u& windowSize /*= { 1280u, 720u }*/, const std::string& windowTitle /*= "STTT"*/) : IMainApp(windowSize, windowTitle)
@@ -136,7 +128,7 @@ void MainApp::drawUi()
 	}
 
 	ImGui::SameLine();
-	HelpMarker("Work in Progress");
+	HelpMarker("Work in Progress", &isMenuPopupCopiedToClipboard);
 	ImGui::Spacing();
 
 	if (ImGui::Button("Exit", buttonSize))
@@ -152,4 +144,40 @@ void MainApp::drawUi()
 void MainApp::updateAi()
 {
 	_gameInstance->updateAi();
+}
+
+namespace
+{
+	static void HelpMarker(const char* desc, bool* copyOnClick)
+	{
+		ImGui::TextDisabled("(?)");
+
+		if (ImGui::IsItemHovered())
+		{
+			ImGui::BeginTooltip();
+			ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
+			ImGui::TextUnformatted(desc);
+			ImGui::SameLine();
+
+			if (copyOnClick != nullptr)
+			{
+				if (*copyOnClick = *copyOnClick || ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+				{
+					ImGui::SetClipboardText(desc);
+					ImGui::TextUnformatted("(copied to clipboard!)");
+				}
+				else
+				{
+					ImGui::TextUnformatted("(click to copy)");
+				}
+			}
+
+			ImGui::PopTextWrapPos();
+			ImGui::EndTooltip();
+		}
+		else if (copyOnClick != nullptr)
+		{
+			*copyOnClick = false;
+		}
+	}
 }
