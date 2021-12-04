@@ -109,7 +109,7 @@
     <ClCompile Include="src\SimpleTtt.cpp" />
     <ClCompile Include="src\AiPlayerSimpleTtt.cpp" />
     <ClCompile Include="src\MainApp.cpp" />
-    <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="main.cpp" />
     <ClCompile Include="src\UltimateTtt.cpp" />
   </ItemGroup>
   <ItemGroup>
