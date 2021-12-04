@@ -21,6 +21,8 @@ namespace
 		SimpleMode = 0, UltimateMode = 1
 	};
 
+	const sf::Color clearColorDefault = sf::Color(100, 100, 100, 255);
+
 	static bool isPlayerFirst = true;
 	static GameMode gameMode = GameMode::SimpleMode;
 
@@ -90,7 +92,7 @@ void MainApp::render()
 		drawUi();
 	}
 
-	_window.clear(sf::Color::White);
+	_window.clear(clearColorDefault);
 
 	_gameInstance->render(_window);
 
