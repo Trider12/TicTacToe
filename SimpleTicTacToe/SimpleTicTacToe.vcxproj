@@ -106,6 +106,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\AiPlayerUltimateTtt.cpp" />
     <ClCompile Include="src\SimpleTtt.cpp" />
     <ClCompile Include="src\AiPlayerSimpleTtt.cpp" />
     <ClCompile Include="src\MainApp.cpp" />
@@ -113,6 +114,8 @@
     <ClCompile Include="src\UltimateTtt.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\AiPlayerUltimateTtt.hpp" />
+    <ClInclude Include="include\Interfaces\IBoard.hpp" />
     <ClInclude Include="include\SimpleTtt.hpp" />
     <ClInclude Include="include\AiPlayerSimpleTtt.hpp" />
     <ClInclude Include="include\Interfaces\IAiPlayer.hpp" />

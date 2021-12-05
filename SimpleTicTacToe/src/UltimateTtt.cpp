@@ -8,15 +8,35 @@
 #include <SFML/Graphics/RectangleShape.hpp>
 #include <SFML/Graphics/CircleShape.hpp>
 
+#include "AiPlayerUltimateTtt.hpp"
+#include "MainApp.hpp"
+
 namespace
 {
-	const int playerMark = 1, aiMark = 2;
+	const uint8_t playerMark = 1, aiMark = 2;
 
-	struct BoardState
+	class UltimateBoard : public IBoard
 	{
-		mutable std::mutex mutex;
-		std::vector<uint8_t> cells = std::vector<uint8_t>(9);
-	} boardState = {};
+		std::vector<uint8_t>& getCellsUnsafe() override
+		{
+			return _cells;
+		}
+
+		std::vector<uint8_t> getCellsCopySafe() const override
+		{
+			std::scoped_lock lock(mutex);
+			return _cells;
+		}
+
+		void clear() override
+		{
+			std::scoped_lock lock(mutex);
+			_cells.assign(_cells.size(), 0);
+		}
+
+	private:
+		std::vector<uint8_t> _cells = std::vector<uint8_t>(81);
+	};
 
 	struct BoardRenderData
 	{
@@ -26,17 +46,22 @@ namespace
 		sf::CircleShape circle;
 
 		void init(const sf::Vector2u& windowSize);
-	} boardRenderData;
+	};
+
+	static BoardRenderData boardRenderData;
 }
 
 UltimateTtt::UltimateTtt(const sf::Vector2u& windowSize) : IGame(windowSize)
 {
 	boardRenderData.init(windowSize);
+
+	_board = std::make_unique<UltimateBoard>();
+	_aiPlayer = std::make_unique<AiPlayerUltimateTtt>();
 }
 
 void UltimateTtt::start(bool isPlayerFirst)
 {
-	//TODO
+	_board->clear();
 }
 
 void UltimateTtt::handleInput(const sf::Event& event)

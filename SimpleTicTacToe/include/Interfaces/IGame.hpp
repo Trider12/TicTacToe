@@ -6,6 +6,7 @@
 #include <SFML/Graphics/RenderTarget.hpp>
 #include <SFML/Window/Event.hpp>
 
+#include "IBoard.hpp"
 #include "IAiPlayer.hpp"
 
 class IGame
@@ -23,5 +24,6 @@ public:
 protected:
 	std::atomic_bool _isGameOver = true;
 	std::atomic_bool _isPlayerTurn = true;
+	std::unique_ptr<IBoard> _board;
 	std::unique_ptr<IAiPlayer> _aiPlayer;
 };

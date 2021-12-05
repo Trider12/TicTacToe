@@ -13,32 +13,30 @@
 
 namespace
 {
-	const int playerMark = 1, aiMark = 2;
+	const uint8_t playerMark = 1, aiMark = 2;
 
-	struct BoardState
+	class SimpleBoard : public IBoard
 	{
-		mutable std::mutex mutex;
-
-		std::vector<uint8_t>& getCellsUnsafe()
+		std::vector<uint8_t>& getCellsUnsafe() override
 		{
-			return cells;
+			return _cells;
 		}
 
-		std::vector<uint8_t> getCellsCopySafe() const
+		std::vector<uint8_t> getCellsCopySafe() const override
 		{
 			std::scoped_lock lock(mutex);
-			return cells;
+			return _cells;
 		}
 
-		void clear()
+		void clear() override
 		{
 			std::scoped_lock lock(mutex);
-			cells.assign(cells.size(), 0);
+			_cells.assign(_cells.size(), 0);
 		}
 
 	private:
-		std::vector<uint8_t> cells = std::vector<uint8_t>(9);
-	} boardState;
+		std::vector<uint8_t> _cells = std::vector<uint8_t>(9);
+	};
 
 	struct BoardRenderData
 	{
@@ -49,19 +47,22 @@ namespace
 		sf::Rect<float> rect;
 		sf::RectangleShape crossLines[2];
 		sf::CircleShape circle;
-	} boardRenderData;
+	};
+
+	static BoardRenderData boardRenderData;
 }
 
 SimpleTtt::SimpleTtt(const sf::Vector2u& windowSize) : IGame(windowSize)
 {
 	boardRenderData.init(windowSize);
 
+	_board = std::make_unique<SimpleBoard>();
 	_aiPlayer = std::make_unique<AiPlayerSimpleTtt>();
 }
 
 void SimpleTtt::start(bool isPlayerFirst)
 {
-	boardState.clear();
+	_board->clear();
 	_isGameOver = false;
 	_isPlayerTurn = isPlayerFirst;
 }
@@ -83,7 +84,7 @@ void SimpleTtt::handleInput(const sf::Event& event)
 				}
 				if (event.key.code == sf::Keyboard::R)
 				{
-					boardState.clear();
+					_board->clear();
 					_isGameOver = false;
 				}
 			}
@@ -106,9 +107,9 @@ void SimpleTtt::handleInput(const sf::Event& event)
 				assert(index >= 0);
 
 				{
-					std::scoped_lock lock(boardState.mutex);
+					std::scoped_lock lock(_board->mutex);
 
-					auto& cells = boardState.getCellsUnsafe();
+					auto& cells = _board->getCellsUnsafe();
 
 					if (cells[index] == 0)
 					{
@@ -141,7 +142,7 @@ void SimpleTtt::render(sf::RenderTarget& target)
 	target.draw(boardRenderData.outerLoopVertices.data(), boardRenderData.outerLoopVertices.size(), sf::LineStrip);
 	target.draw(boardRenderData.innerLinesVertices.data(), boardRenderData.innerLinesVertices.size(), sf::Lines);
 
-	auto cellsCopy = boardState.getCellsCopySafe();
+	auto cellsCopy = _board->getCellsCopySafe();
 
 	for (uint8_t i = 0; i < cellsCopy.size(); i++)
 	{
@@ -179,7 +180,7 @@ void SimpleTtt::updateAi()
 	if (!_isGameOver && !_isPlayerTurn)
 	{
 		{
-			auto cellsCopy = boardState.getCellsCopySafe();
+			auto cellsCopy = _board->getCellsCopySafe();
 
 			if (_isGameOver = _aiPlayer->isGameOver(cellsCopy))
 			{
@@ -187,11 +188,11 @@ void SimpleTtt::updateAi()
 			}
 
 			int movePos = _aiPlayer->getMove(cellsCopy);
-			std::scoped_lock lock(boardState.mutex);
-			boardState.getCellsUnsafe()[movePos] = aiMark;
+			std::scoped_lock lock(_board->mutex);
+			_board->getCellsUnsafe()[movePos] = aiMark;
 		}
 
-		if (_isGameOver = _aiPlayer->isGameOver(boardState.getCellsCopySafe()))
+		if (_isGameOver = _aiPlayer->isGameOver(_board->getCellsCopySafe()))
 		{
 			return;
 		}

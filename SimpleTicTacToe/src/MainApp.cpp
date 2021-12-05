@@ -139,10 +139,16 @@ void MainApp::drawUi()
 	ImGui::SameLine();
 	HelpMarker("Work in Progress", &isMenuPopupCopiedToClipboard);
 	ImGui::Spacing();
+
 #ifdef _DEBUG
 #define GET_VARIABLE_NAME(variable) #variable
 	bool temp = debugPlayEnabled;
-	debugPlayEnabled = ImGui::Checkbox(GET_VARIABLE_NAME(debugPlayEnabled), &temp);
+
+	if (ImGui::Checkbox(GET_VARIABLE_NAME(debugPlayEnabled), &temp))
+	{
+		debugPlayEnabled = temp;
+	}
+
 	ImGui::Spacing();
 #endif // _DEBUG
 
