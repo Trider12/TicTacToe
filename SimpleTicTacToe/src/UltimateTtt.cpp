@@ -59,12 +59,12 @@ UltimateTtt::UltimateTtt(const sf::Vector2u& windowSize) : IGame(windowSize)
 	_aiPlayer = std::make_unique<AiPlayerUltimateTtt>();
 }
 
-void UltimateTtt::start(bool isPlayerFirst)
+void UltimateTtt::reset(bool isPlayerFirst)
 {
 	_board->clear();
 }
 
-void UltimateTtt::handleInput(const sf::Event& event)
+void UltimateTtt::input(const sf::Event& event)
 {
 	//TODO
 }

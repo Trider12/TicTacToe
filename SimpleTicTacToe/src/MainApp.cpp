@@ -54,6 +54,8 @@ MainApp::MainApp(const sf::Vector2u& windowSize /*= { 1280u, 720u }*/, const std
 
 MainApp::~MainApp()
 {
+	_gameInstance->exit();
+
 	_aiThread.join();
 	_renderThread.join();
 
@@ -68,7 +70,7 @@ void MainApp::update()
 	{
 		ImGui::SFML::ProcessEvent(event);
 
-		_gameInstance->handleInput(event);
+		_gameInstance->input(event);
 
 		if (event.type == sf::Event::Closed)
 		{
@@ -118,7 +120,7 @@ void MainApp::drawUi()
 
 	if (ImGui::Button("Play", buttonSize))
 	{
-		_gameInstance->start(isPlayerFirst);
+		_gameInstance->reset(isPlayerFirst);
 	}
 
 	ImGui::Spacing();

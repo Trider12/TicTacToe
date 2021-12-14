@@ -50,6 +50,7 @@ namespace
 	};
 
 	static BoardRenderData boardRenderData;
+	static std::mutex aiThreadMutex;
 }
 
 SimpleTtt::SimpleTtt(const sf::Vector2u& windowSize) : IGame(windowSize)
@@ -60,14 +61,17 @@ SimpleTtt::SimpleTtt(const sf::Vector2u& windowSize) : IGame(windowSize)
 	_aiPlayer = std::make_unique<AiPlayerSimpleTtt>();
 }
 
-void SimpleTtt::start(bool isPlayerFirst)
+void SimpleTtt::reset(bool isPlayerFirst)
 {
 	_board->clear();
+
+	std::scoped_lock(aiThreadMutex);
 	_isGameOver = false;
 	_isPlayerTurn = isPlayerFirst;
+	_aiExecuteCondition.notify_all();
 }
 
-void SimpleTtt::handleInput(const sf::Event& event)
+void SimpleTtt::input(const sf::Event& event)
 {
 	if (!_isGameOver && (_isPlayerTurn || MainApp::debugPlayEnabled))
 	{
@@ -80,12 +84,13 @@ void SimpleTtt::handleInput(const sf::Event& event)
 			{
 				if (event.key.code == sf::Keyboard::Space)
 				{
+					std::scoped_lock(aiThreadMutex);
 					_isPlayerTurn = !_isPlayerTurn;
+					_aiExecuteCondition.notify_all();
 				}
 				if (event.key.code == sf::Keyboard::R)
 				{
-					_board->clear();
-					_isGameOver = false;
+					reset(_isPlayerTurn);
 				}
 			}
 
@@ -119,7 +124,9 @@ void SimpleTtt::handleInput(const sf::Event& event)
 
 				if (!MainApp::debugPlayEnabled)
 				{
+					std::scoped_lock(aiThreadMutex);
 					_isPlayerTurn = false;
+					_aiExecuteCondition.notify_all();
 				}
 			}
 
@@ -177,28 +184,35 @@ void SimpleTtt::render(sf::RenderTarget& target)
 
 void SimpleTtt::updateAi()
 {
-	if (!_isGameOver && !_isPlayerTurn)
+	std::unique_lock lock(aiThreadMutex);
+	_aiExecuteCondition.wait(lock, [this]() { return !_isGameOver && !_isPlayerTurn || _isExiting; });
+
 	{
-		{
-			auto cellsCopy = _board->getCellsCopySafe();
+		auto cellsCopy = _board->getCellsCopySafe();
 
-			if (_isGameOver = _aiPlayer->isGameOver(cellsCopy))
-			{
-				return;
-			}
-
-			int movePos = _aiPlayer->getMove(cellsCopy);
-			std::scoped_lock lock(_board->mutex);
-			_board->getCellsUnsafe()[movePos] = aiMark;
-		}
-
-		if (_isGameOver = _aiPlayer->isGameOver(_board->getCellsCopySafe()))
+		if (_isGameOver = _aiPlayer->isGameOver(cellsCopy))
 		{
 			return;
 		}
 
-		_isPlayerTurn = true;
+		int movePos = _aiPlayer->getMove(cellsCopy);
+		std::scoped_lock lock(_board->mutex);
+		_board->getCellsUnsafe()[movePos] = aiMark;
 	}
+
+	if (_isGameOver = _aiPlayer->isGameOver(_board->getCellsCopySafe()))
+	{
+		return;
+	}
+
+	_isPlayerTurn = true;
+}
+
+void SimpleTtt::exit()
+{
+	std::scoped_lock(aiThreadMutex);
+	_isExiting = true;
+	_aiExecuteCondition.notify_all();
 }
 
 namespace
